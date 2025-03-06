@@ -1,0 +1,156 @@
+
+{
+  "income": [
+    {
+      "id": "inc-1",
+      "amount": 15000,
+      "description": "הכנסה חודשית מלקוח א",
+      "category": "חודשי",
+      "date": "2023-05-01"
+    },
+    {
+      "id": "inc-2",
+      "amount": 8500,
+      "description": "תשלום חד פעמי",
+      "category": "יומי",
+      "date": "2023-05-10"
+    },
+    {
+      "id": "inc-3",
+      "amount": 12000,
+      "description": "פרויקט מיוחד",
+      "category": "חודשי",
+      "date": "2023-05-15"
+    }
+  ],
+  "expenses": [
+    {
+      "id": "exp-1",
+      "amount": 5000,
+      "description": "משכורות עובדים",
+      "category": "משכורות",
+      "date": "2023-05-05"
+    },
+    {
+      "id": "exp-2",
+      "amount": 2500,
+      "description": "החזר ללקוח עבור תיקונים",
+      "category": "החזרים ללקוחות עבור תיקונים",
+      "date": "2023-05-08"
+    },
+    {
+      "id": "exp-3",
+      "amount": 3800,
+      "description": "חומרים וציוד",
+      "category": "חומרים, ציוד ותיקונים",
+      "date": "2023-05-12"
+    },
+    {
+      "id": "exp-4",
+      "amount": 1500,
+      "description": "הוצאות פרסום",
+      "category": "הוצאות שיווק ופיתוח",
+      "date": "2023-05-18"
+    },
+    {
+      "id": "exp-5",
+      "amount": 800,
+      "description": "ארוחות צוות",
+      "category": "הוצאות מיותרות",
+      "date": "2023-05-20"
+    },
+    {
+      "id": "exp-6",
+      "amount": 1200,
+      "description": "ציוד משרדי",
+      "category": "הוצאות משרד",
+      "date": "2023-05-25"
+    }
+  ],
+  "advances": [
+    {
+      "id": "adv-1",
+      "employeeName": "צח",
+      "amount": 2000,
+      "description": "מקדמה על משכורת",
+      "paymentMethod": "מזומן",
+      "date": "2023-05-03"
+    },
+    {
+      "id": "adv-2",
+      "employeeName": "בן",
+      "amount": 1500,
+      "description": "מקדמה דחופה",
+      "paymentMethod": "העברה בנקאית",
+      "date": "2023-05-15"
+    },
+    {
+      "id": "adv-3",
+      "employeeName": "רועי",
+      "amount": 1000,
+      "description": "מקדמה לציוד",
+      "paymentMethod": "צ'ק",
+      "date": "2023-05-20"
+    }
+  ],
+  "fieldWorkerSalaries": {
+    "2023-05": [
+      {
+        "date": "2023-05-01",
+        "workers": {
+          "שלמה": 250,
+          "אבי": 300,
+          "שקד": 280,
+          "מאיר": 260,
+          "מאי": 290,
+          "יעקב": 310
+        }
+      },
+      {
+        "date": "2023-05-02",
+        "workers": {
+          "שלמה": 250,
+          "אבי": 300,
+          "שקד": 280,
+          "מאיר": 260,
+          "מאי": 290,
+          "יעקב": 310
+        }
+      },
+      {
+        "date": "2023-05-03",
+        "workers": {
+          "שלמה": 250,
+          "אבי": 300,
+          "שקד": 280,
+          "מאיר": 260,
+          "מאי": 290,
+          "יעקב": 310
+        }
+      }
+    ]
+  },
+  "outstandingCustomers": [
+    {
+      "id": "oc-1",
+      "customerName": "לקוח א",
+      "amount": 5000,
+      "description": "תשלום על פרויקט שלא שולם",
+      "paymentDate": "2023-06-01"
+    },
+    {
+      "id": "oc-2",
+      "customerName": "לקוח ב",
+      "amount": 3500,
+      "description": "יתרת חוב",
+      "paymentDate": "2023-06-15"
+    },
+    {
+      "id": "oc-3",
+      "customerName": "לקוח ג",
+      "amount": 7500,
+      "description": "תשלום חלקי על עבודה",
+      "paymentDate": "2023-06-30"
+    }
+  ]
+}
