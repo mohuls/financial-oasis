@@ -8,20 +8,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-
-// Sample data - would come from your db.json in real app
-const advancesData = [
-  { id: 1, employee: "צח", amount: 2500, description: "מקדמה על משכורת", method: "מזומן", date: "2025-06-05" },
-  { id: 2, employee: "בן", amount: 1800, description: "תשלום מקדמה", method: "העברה בנקאית", date: "2025-06-10" },
-  { id: 3, employee: "רועי", amount: 3000, description: "מקדמה על בונוס", method: "צ'ק", date: "2025-06-15" },
-  { id: 4, employee: "אוראל", amount: 2000, description: "מקדמה חודשית", method: "אשראי", date: "2025-06-20" },
-];
+import { fetchData, addData, updateData, deleteData, AdvanceItem } from "../services/api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 const employeeOptions = ["צח", "בן", "רועי", "אוראל"];
 const paymentMethodOptions = ["מזומן", "צ'ק", "אשראי", "העברה בנקאית"];
 
 const Advances = () => {
-  const [advances, setAdvances] = useState(advancesData);
   const [newAdvance, setNewAdvance] = useState({
     employee: "צח",
     amount: "",
@@ -30,8 +23,56 @@ const Advances = () => {
     date: new Date().toISOString().split("T")[0],
   });
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [editingAdvance, setEditingAdvance] = useState(null);
+  const [editingAdvance, setEditingAdvance] = useState<AdvanceItem | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  
+  const queryClient = useQueryClient();
+  
+  // Fetch advances data
+  const { data: advances = [], isLoading } = useQuery({
+    queryKey: ['advances'],
+    queryFn: () => fetchData('advances'),
+  });
+
+  // Add advance mutation
+  const addAdvanceMutation = useMutation({
+    mutationFn: (newItem: Omit<AdvanceItem, "id">) => {
+      return addData('advances', newItem);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['advances'] });
+      setIsAddDialogOpen(false);
+      setNewAdvance({
+        employee: "צח",
+        amount: "",
+        description: "",
+        method: "מזומן",
+        date: new Date().toISOString().split("T")[0],
+      });
+    }
+  });
+
+  // Update advance mutation
+  const updateAdvanceMutation = useMutation({
+    mutationFn: (advance: AdvanceItem) => {
+      return updateData('advances', advance.id, advance);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['advances'] });
+      setIsEditDialogOpen(false);
+      setEditingAdvance(null);
+    }
+  });
+
+  // Delete advance mutation
+  const deleteAdvanceMutation = useMutation({
+    mutationFn: (id: number) => {
+      return deleteData('advances', id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['advances'] });
+    }
+  });
 
   const handleAddAdvance = () => {
     if (!newAdvance.amount || !newAdvance.description || !newAdvance.date) {
@@ -40,7 +81,6 @@ const Advances = () => {
     }
 
     const advanceToAdd = {
-      id: advances.length + 1,
       employee: newAdvance.employee,
       amount: Number(newAdvance.amount),
       description: newAdvance.description,
@@ -48,34 +88,16 @@ const Advances = () => {
       date: newAdvance.date,
     };
 
-    setAdvances([...advances, advanceToAdd]);
-    setNewAdvance({
-      employee: "צח",
-      amount: "",
-      description: "",
-      method: "מזומן",
-      date: new Date().toISOString().split("T")[0],
-    });
-    setIsAddDialogOpen(false);
-    toast.success("בוצע בהצלחה", { description: "מקדמה נוספה בהצלחה" });
+    addAdvanceMutation.mutate(advanceToAdd);
   };
 
-  const handleDeleteAdvance = (id) => {
-    setAdvances(advances.filter((item) => item.id !== id));
-    toast.success("בוצע בהצלחה", { description: "מקדמה נמחקה בהצלחה" });
+  const handleDeleteAdvance = (id: number) => {
+    deleteAdvanceMutation.mutate(id);
   };
 
   const handleEditAdvance = () => {
     if (!editingAdvance) return;
-
-    const updatedAdvances = advances.map((item) => 
-      item.id === editingAdvance.id ? editingAdvance : item
-    );
-    
-    setAdvances(updatedAdvances);
-    setIsEditDialogOpen(false);
-    setEditingAdvance(null);
-    toast.success("בוצע בהצלחה", { description: "מקדמה עודכנה בהצלחה" });
+    updateAdvanceMutation.mutate(editingAdvance);
   };
 
   return (
@@ -159,7 +181,12 @@ const Advances = () => {
               </div>
             </div>
             <div className="flex justify-end">
-              <Button onClick={handleAddAdvance}>הוסף</Button>
+              <Button 
+                onClick={handleAddAdvance}
+                disabled={addAdvanceMutation.isPending}
+              >
+                {addAdvanceMutation.isPending ? "מוסיף..." : "הוסף"}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -170,54 +197,59 @@ const Advances = () => {
           <CardTitle>רשימת מקדמות</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-right">תאריך</TableHead>
-                <TableHead className="text-right">שם עובד</TableHead>
-                <TableHead className="text-right">תיאור</TableHead>
-                <TableHead className="text-right">אמצעי תשלום</TableHead>
-                <TableHead className="text-right">סכום (₪)</TableHead>
-                <TableHead className="text-right">פעולות</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {advances
-                .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                .map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="font-medium">
-                      {new Date(item.date).toLocaleDateString("he-IL")}
-                    </TableCell>
-                    <TableCell>{item.employee}</TableCell>
-                    <TableCell>{item.description}</TableCell>
-                    <TableCell>{item.method}</TableCell>
-                    <TableCell className="font-bold">₪{item.amount.toLocaleString()}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setEditingAdvance(item);
-                            setIsEditDialogOpen(true);
-                          }}
-                        >
-                          ערוך
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDeleteAdvance(item.id)}
-                        >
-                          מחק
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-            </TableBody>
-          </Table>
+          {isLoading ? (
+            <div className="text-center p-4">טוען נתונים...</div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-right">תאריך</TableHead>
+                  <TableHead className="text-right">שם עובד</TableHead>
+                  <TableHead className="text-right">תיאור</TableHead>
+                  <TableHead className="text-right">אמצעי תשלום</TableHead>
+                  <TableHead className="text-right">סכום (₪)</TableHead>
+                  <TableHead className="text-right">פעולות</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {advances
+                  .sort((a: AdvanceItem, b: AdvanceItem) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                  .map((item: AdvanceItem) => (
+                    <TableRow key={item.id}>
+                      <TableCell className="font-medium">
+                        {new Date(item.date).toLocaleDateString("he-IL")}
+                      </TableCell>
+                      <TableCell>{item.employee}</TableCell>
+                      <TableCell>{item.description}</TableCell>
+                      <TableCell>{item.method}</TableCell>
+                      <TableCell className="font-bold">₪{item.amount.toLocaleString()}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setEditingAdvance(item);
+                              setIsEditDialogOpen(true);
+                            }}
+                          >
+                            ערוך
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeleteAdvance(item.id)}
+                            disabled={deleteAdvanceMutation.isPending}
+                          >
+                            מחק
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 
@@ -305,7 +337,12 @@ const Advances = () => {
             </div>
           )}
           <div className="flex justify-end">
-            <Button onClick={handleEditAdvance}>שמור שינויים</Button>
+            <Button 
+              onClick={handleEditAdvance}
+              disabled={updateAdvanceMutation.isPending}
+            >
+              {updateAdvanceMutation.isPending ? "שומר..." : "שמור שינויים"}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

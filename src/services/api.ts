@@ -43,14 +43,21 @@ export interface FieldWorkerData {
   };
 }
 
-// Function to fetch data from db.json
+// Function to fetch data from API
 export async function fetchData(endpoint: string) {
   try {
+    console.log(`Fetching data from /api/${endpoint}`);
     const response = await fetch(`/api/${endpoint}`);
+    
     if (!response.ok) {
-      throw new Error(`Error fetching ${endpoint}`);
+      throw new Error(`Error fetching ${endpoint}: ${response.statusText}`);
     }
-    return await response.json();
+    
+    const data = await response.json();
+    console.log(`Fetched ${endpoint} data:`, data);
+    
+    // Handle different response formats from MirageJS
+    return data.models || data;
   } catch (error) {
     console.error(`Failed to fetch ${endpoint}:`, error);
     toast.error("שגיאה בטעינת הנתונים", {
@@ -60,9 +67,10 @@ export async function fetchData(endpoint: string) {
   }
 }
 
-// Function to add data to db.json
+// Function to add data to API
 export async function addData(endpoint: string, data: any) {
   try {
+    console.log(`Adding data to /api/${endpoint}:`, data);
     const response = await fetch(`/api/${endpoint}`, {
       method: "POST",
       headers: {
@@ -70,13 +78,19 @@ export async function addData(endpoint: string, data: any) {
       },
       body: JSON.stringify(data),
     });
+    
     if (!response.ok) {
-      throw new Error(`Error adding ${endpoint}`);
+      throw new Error(`Error adding ${endpoint}: ${response.statusText}`);
     }
+    
+    const result = await response.json();
+    console.log(`Added ${endpoint} data:`, result);
+    
     toast.success("בוצע בהצלחה", {
       description: "הנתונים נוספו בהצלחה",
     });
-    return await response.json();
+    
+    return result;
   } catch (error) {
     console.error(`Failed to add ${endpoint}:`, error);
     toast.error("שגיאה בהוספת נתונים", {
@@ -86,9 +100,10 @@ export async function addData(endpoint: string, data: any) {
   }
 }
 
-// Function to update data in db.json
+// Function to update data in API
 export async function updateData(endpoint: string, id: number, data: any) {
   try {
+    console.log(`Updating ${endpoint}/${id}:`, data);
     const response = await fetch(`/api/${endpoint}/${id}`, {
       method: "PUT",
       headers: {
@@ -96,13 +111,19 @@ export async function updateData(endpoint: string, id: number, data: any) {
       },
       body: JSON.stringify(data),
     });
+    
     if (!response.ok) {
-      throw new Error(`Error updating ${endpoint}`);
+      throw new Error(`Error updating ${endpoint}: ${response.statusText}`);
     }
+    
+    const result = await response.json();
+    console.log(`Updated ${endpoint} data:`, result);
+    
     toast.success("בוצע בהצלחה", {
       description: "הנתונים עודכנו בהצלחה",
     });
-    return await response.json();
+    
+    return result;
   } catch (error) {
     console.error(`Failed to update ${endpoint}:`, error);
     toast.error("שגיאה בעדכון נתונים", {
@@ -112,18 +133,22 @@ export async function updateData(endpoint: string, id: number, data: any) {
   }
 }
 
-// Function to delete data from db.json
+// Function to delete data from API
 export async function deleteData(endpoint: string, id: number) {
   try {
+    console.log(`Deleting ${endpoint}/${id}`);
     const response = await fetch(`/api/${endpoint}/${id}`, {
       method: "DELETE",
     });
+    
     if (!response.ok) {
-      throw new Error(`Error deleting ${endpoint}`);
+      throw new Error(`Error deleting ${endpoint}: ${response.statusText}`);
     }
+    
     toast.success("בוצע בהצלחה", {
       description: "המחיקה בוצעה בהצלחה",
     });
+    
     return true;
   } catch (error) {
     console.error(`Failed to delete ${endpoint}:`, error);
@@ -137,6 +162,7 @@ export async function deleteData(endpoint: string, id: number) {
 // Function to update field worker salaries
 export async function updateFieldWorkerSalaries(data: FieldWorkerData) {
   try {
+    console.log("Updating fieldWorkerSalaries:", data);
     const response = await fetch(`/api/fieldWorkerSalaries`, {
       method: "PUT",
       headers: {
@@ -144,13 +170,19 @@ export async function updateFieldWorkerSalaries(data: FieldWorkerData) {
       },
       body: JSON.stringify(data),
     });
+    
     if (!response.ok) {
-      throw new Error("Error updating field worker salaries");
+      throw new Error(`Error updating field worker salaries: ${response.statusText}`);
     }
+    
+    const result = await response.json();
+    console.log("Updated fieldWorkerSalaries data:", result);
+    
     toast.success("בוצע בהצלחה", {
       description: "נתוני המשכורות עודכנו בהצלחה",
     });
-    return await response.json();
+    
+    return result;
   } catch (error) {
     console.error("Failed to update field worker salaries:", error);
     toast.error("שגיאה בעדכון נתונים", {

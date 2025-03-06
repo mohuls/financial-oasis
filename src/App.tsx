@@ -15,12 +15,13 @@ import OutstandingCustomers from "./components/OutstandingCustomers";
 import NotFound from "./pages/NotFound";
 import Sidebar from "./components/Sidebar";
 
-// Create a client
+// Create a client with better configuration for debugging
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 5 * 60 * 1000, // 5 minutes
       refetchOnWindowFocus: false,
+      retry: 1,
     },
   },
 });
