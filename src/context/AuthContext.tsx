@@ -1,7 +1,6 @@
-
 import { createContext, useState, useContext, useEffect, ReactNode } from "react";
 import authData from "../data/auth.json";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "sonner";
 
 interface User {
   name: string;
@@ -34,7 +33,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Check for saved authentication on mount
   useEffect(() => {
     const savedUser = localStorage.getItem("vip-finance-user");
     if (savedUser) {
