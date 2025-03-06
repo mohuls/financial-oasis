@@ -1,3 +1,4 @@
+
 import { createContext, useState, useContext, useEffect, ReactNode } from "react";
 import authData from "../data/auth.json";
 import { toast } from "sonner";
@@ -33,6 +34,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  // Load user from localStorage on mount
   useEffect(() => {
     const savedUser = localStorage.getItem("vip-finance-user");
     if (savedUser) {

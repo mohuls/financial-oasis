@@ -13,13 +13,24 @@ import Advances from "./components/Advances";
 import FieldWorkerSalaries from "./components/FieldWorkerSalaries";
 import OutstandingCustomers from "./components/OutstandingCustomers";
 import NotFound from "./pages/NotFound";
+import Sidebar from "./components/Sidebar";
 
 const queryClient = new QueryClient();
 
-// Protected Route Component
+// Protected Route Component with Sidebar
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated } = useAuth();
-  return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  return (
+    <div className="flex min-h-screen">
+      <Sidebar />
+      <div className="flex-1 md:mr-[260px] p-6">{children}</div>
+    </div>
+  );
 };
 
 const App = () => (

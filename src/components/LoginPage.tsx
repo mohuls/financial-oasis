@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Input } from "@/components/ui/input";
@@ -10,10 +10,17 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const [email, setEmail] = useState("admin@cleanholdings.com");
   const [password, setPassword] = useState("0585676722");
   const [rememberPassword, setRememberPassword] = useState(false);
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/", { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,7 +86,7 @@ const LoginPage = () => {
                 variant="link"
                 className="text-sm hover:text-primary"
                 onClick={() => {
-                  // TODO: Implement forgot password functionality
+                  // Placeholder for forgot password
                 }}
               >
                 שכחת סיסמה?
