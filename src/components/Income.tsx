@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,18 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-
-// Sample data - would come from your db.json in real app
-const incomeData = [
-  { id: 1, amount: 25000, description: "תקבול חודשי - לקוח א", category: "סיכום חודשי", date: "2025-06-01" },
-  { id: 2, amount: 3500, description: "עבודה חד פעמית", category: "סיכום יומי", date: "2025-06-05" },
-  { id: 3, amount: 18000, description: "פרויקט שיפוץ", category: "סיכום חודשי", date: "2025-06-10" },
-  { id: 4, amount: 5500, description: "עבודת ניקיון", category: "סיכום יומי", date: "2025-06-15" },
-  { id: 5, amount: 33000, description: "חוזה חודשי - לקוח ב", category: "סיכום חודשי", date: "2025-06-20" },
-];
+import { fetchData, addData, updateData, deleteData, IncomeItem } from "../services/api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 const Income = () => {
-  const [income, setIncome] = useState(incomeData);
   const [newIncome, setNewIncome] = useState({
     amount: "",
     description: "",
@@ -27,8 +19,55 @@ const Income = () => {
     date: new Date().toISOString().split("T")[0],
   });
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [editingIncome, setEditingIncome] = useState(null);
+  const [editingIncome, setEditingIncome] = useState<IncomeItem | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  
+  const queryClient = useQueryClient();
+  
+  // Fetch income data
+  const { data: income = [], isLoading } = useQuery({
+    queryKey: ['income'],
+    queryFn: () => fetchData('income'),
+  });
+
+  // Add income mutation
+  const addIncomeMutation = useMutation({
+    mutationFn: (newItem: Omit<IncomeItem, "id">) => {
+      return addData('income', newItem);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['income'] });
+      setIsAddDialogOpen(false);
+      setNewIncome({
+        amount: "",
+        description: "",
+        category: "סיכום יומי",
+        date: new Date().toISOString().split("T")[0],
+      });
+    }
+  });
+
+  // Update income mutation
+  const updateIncomeMutation = useMutation({
+    mutationFn: (income: IncomeItem) => {
+      return updateData('income', income.id, income);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['income'] });
+      setIsEditDialogOpen(false);
+      setEditingIncome(null);
+    }
+  });
+
+  // Delete income mutation
+  const deleteIncomeMutation = useMutation({
+    mutationFn: (id: number) => {
+      return deleteData('income', id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['income'] });
+    }
+  });
 
   const handleAddIncome = () => {
     if (!newIncome.amount || !newIncome.description || !newIncome.date) {
@@ -37,40 +76,22 @@ const Income = () => {
     }
 
     const incomeToAdd = {
-      id: income.length + 1,
       amount: Number(newIncome.amount),
       description: newIncome.description,
       category: newIncome.category,
       date: newIncome.date,
     };
 
-    setIncome([...income, incomeToAdd]);
-    setNewIncome({
-      amount: "",
-      description: "",
-      category: "סיכום יומי",
-      date: new Date().toISOString().split("T")[0],
-    });
-    setIsAddDialogOpen(false);
-    toast.success("בוצע בהצלחה", { description: "הכנסה נוספה בהצלחה" });
+    addIncomeMutation.mutate(incomeToAdd);
   };
 
-  const handleDeleteIncome = (id) => {
-    setIncome(income.filter((item) => item.id !== id));
-    toast.success("בוצע בהצלחה", { description: "הכנסה נמחקה בהצלחה" });
+  const handleDeleteIncome = (id: number) => {
+    deleteIncomeMutation.mutate(id);
   };
 
   const handleEditIncome = () => {
     if (!editingIncome) return;
-
-    const updatedIncome = income.map((item) => 
-      item.id === editingIncome.id ? editingIncome : item
-    );
-    
-    setIncome(updatedIncome);
-    setIsEditDialogOpen(false);
-    setEditingIncome(null);
-    toast.success("בוצע בהצלחה", { description: "הכנסה עודכנה בהצלחה" });
+    updateIncomeMutation.mutate(editingIncome);
   };
 
   return (
@@ -133,7 +154,12 @@ const Income = () => {
               </div>
             </div>
             <div className="flex justify-end">
-              <Button onClick={handleAddIncome}>הוסף</Button>
+              <Button 
+                onClick={handleAddIncome}
+                disabled={addIncomeMutation.isPending}
+              >
+                {addIncomeMutation.isPending ? "מוסיף..." : "הוסף"}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -144,52 +170,57 @@ const Income = () => {
           <CardTitle>רשימת הכנסות</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-right">תאריך</TableHead>
-                <TableHead className="text-right">תיאור</TableHead>
-                <TableHead className="text-right">קטגוריה</TableHead>
-                <TableHead className="text-right">סכום (₪)</TableHead>
-                <TableHead className="text-right">פעולות</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {income
-                .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                .map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="font-medium">
-                      {new Date(item.date).toLocaleDateString("he-IL")}
-                    </TableCell>
-                    <TableCell>{item.description}</TableCell>
-                    <TableCell>{item.category}</TableCell>
-                    <TableCell className="font-bold">₪{item.amount.toLocaleString()}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setEditingIncome(item);
-                            setIsEditDialogOpen(true);
-                          }}
-                        >
-                          ערוך
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDeleteIncome(item.id)}
-                        >
-                          מחק
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-            </TableBody>
-          </Table>
+          {isLoading ? (
+            <div className="text-center p-4">טוען נתונים...</div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-right">תאריך</TableHead>
+                  <TableHead className="text-right">תיאור</TableHead>
+                  <TableHead className="text-right">קטגוריה</TableHead>
+                  <TableHead className="text-right">סכום (₪)</TableHead>
+                  <TableHead className="text-right">פעולות</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {income
+                  .sort((a: IncomeItem, b: IncomeItem) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                  .map((item: IncomeItem) => (
+                    <TableRow key={item.id}>
+                      <TableCell className="font-medium">
+                        {new Date(item.date).toLocaleDateString("he-IL")}
+                      </TableCell>
+                      <TableCell>{item.description}</TableCell>
+                      <TableCell>{item.category}</TableCell>
+                      <TableCell className="font-bold">₪{item.amount.toLocaleString()}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setEditingIncome(item);
+                              setIsEditDialogOpen(true);
+                            }}
+                          >
+                            ערוך
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeleteIncome(item.id)}
+                            disabled={deleteIncomeMutation.isPending}
+                          >
+                            מחק
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 
@@ -254,7 +285,12 @@ const Income = () => {
             </div>
           )}
           <div className="flex justify-end">
-            <Button onClick={handleEditIncome}>שמור שינויים</Button>
+            <Button 
+              onClick={handleEditIncome}
+              disabled={updateIncomeMutation.isPending}
+            >
+              {updateIncomeMutation.isPending ? "שומר..." : "שמור שינויים"}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

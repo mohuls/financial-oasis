@@ -1,46 +1,78 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-
-// Sample data - would come from your db.json in real app
-const initialWorkers = ["שלמה", "אבי", "שקד", "מאיר", "מאי", "יעקב"];
+import { fetchData, updateFieldWorkerSalaries, FieldWorkerData } from "../services/api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 const FieldWorkerSalaries = () => {
   const [currentMonth, setCurrentMonth] = useState("6"); // June
   const [currentYear, setCurrentYear] = useState("2025");
-  const [workers, setWorkers] = useState(initialWorkers);
+  const [workers, setWorkers] = useState<string[]>([]);
+  const [salaryData, setSalaryData] = useState<Record<string, Record<string, number>>>({});
   
-  // Generate dates for the current month
-  const getDaysInMonth = (year, month) => {
+  const queryClient = useQueryClient();
+  
+  // Fetch field worker salaries data
+  const { data: fieldWorkerData, isLoading } = useQuery({
+    queryKey: ['fieldWorkerSalaries'],
+    queryFn: () => fetchData('fieldWorkerSalaries'),
+  });
+
+  // Update field worker salaries mutation
+  const updateSalariesMutation = useMutation({
+    mutationFn: (data: FieldWorkerData) => {
+      return updateFieldWorkerSalaries(data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fieldWorkerSalaries'] });
+      toast.success("בוצע בהצלחה", { description: "נתוני משכורות נשמרו בהצלחה" });
+    }
+  });
+  
+  // Initialize data when fieldWorkerData changes or month/year changes
+  useEffect(() => {
+    if (fieldWorkerData) {
+      const yearData = fieldWorkerData[currentYear];
+      if (yearData && yearData[currentMonth]) {
+        setWorkers(yearData[currentMonth].workers || []);
+        setSalaryData(yearData[currentMonth].data || {});
+      } else {
+        // Default values if no data for this month/year
+        setWorkers(["שלמה", "אבי", "שקד", "מאיר", "מאי", "יעקב"]);
+        
+        // Initialize empty salary data
+        const newData: Record<string, Record<string, number>> = {};
+        const daysInMonth = getDaysInMonth(parseInt(currentYear), parseInt(currentMonth));
+        
+        for (let day = 1; day <= daysInMonth; day++) {
+          const dateKey = `${currentYear}-${currentMonth.padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+          newData[dateKey] = {};
+          
+          ["שלמה", "אבי", "שקד", "מאיר", "מאי", "יעקב"].forEach(worker => {
+            // Generate random values between 250-310 for sample data
+            newData[dateKey][worker] = Math.floor(Math.random() * (310 - 250 + 1)) + 250;
+          });
+        }
+        
+        setSalaryData(newData);
+      }
+    }
+  }, [fieldWorkerData, currentMonth, currentYear]);
+  
+  // Get days in month helper
+  const getDaysInMonth = (year: number, month: number) => {
     return new Date(year, month, 0).getDate();
   };
   
   const daysInMonth = getDaysInMonth(parseInt(currentYear), parseInt(currentMonth));
-  
-  // Initialize salary data structure
-  const [salaryData, setSalaryData] = useState(() => {
-    const data = {};
-    
-    for (let day = 1; day <= daysInMonth; day++) {
-      const dateKey = `${currentYear}-${currentMonth.padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-      data[dateKey] = {};
-      
-      workers.forEach(worker => {
-        // Generate random values between 250-310 for sample data
-        data[dateKey][worker] = Math.floor(Math.random() * (310 - 250 + 1)) + 250;
-      });
-    }
-    
-    return data;
-  });
 
-  const handleSalaryChange = (date, worker, value) => {
-    const numValue = value === "" ? "" : Number(value);
+  const handleSalaryChange = (date: string, worker: string, value: string) => {
+    const numValue = value === "" ? 0 : Number(value);
     
     setSalaryData(prev => ({
       ...prev,
@@ -51,7 +83,7 @@ const FieldWorkerSalaries = () => {
     }));
   };
 
-  const calculateTotalForWorker = (worker) => {
+  const calculateTotalForWorker = (worker: string) => {
     let total = 0;
     Object.keys(salaryData).forEach(date => {
       const value = salaryData[date][worker];
@@ -62,7 +94,7 @@ const FieldWorkerSalaries = () => {
     return total;
   };
 
-  const calculateTotalForDate = (date) => {
+  const calculateTotalForDate = (date: string) => {
     let total = 0;
     Object.keys(salaryData[date] || {}).forEach(worker => {
       const value = salaryData[date][worker];
@@ -81,7 +113,7 @@ const FieldWorkerSalaries = () => {
     return total;
   };
 
-  const formatDate = (dateString) => {
+  const formatDate = (dateString: string) => {
     const [year, month, day] = dateString.split('-');
     return `${day}.${month}.${year}`;
   };
@@ -103,9 +135,26 @@ const FieldWorkerSalaries = () => {
   };
 
   const saveChanges = () => {
-    // Here you would typically save to your database or localStorage
-    toast.success("בוצע בהצלחה", { description: "נתוני משכורות נשמרו בהצלחה" });
+    // Prepare data for saving
+    const updatedData: FieldWorkerData = {
+      ...(fieldWorkerData || {}),
+      [currentYear]: {
+        ...(fieldWorkerData?.[currentYear] || {}),
+        [currentMonth]: {
+          workers,
+          data: salaryData
+        }
+      }
+    };
+    
+    // Save to API
+    updateSalariesMutation.mutate(updatedData);
   };
+
+  // If loading, show loader
+  if (isLoading) {
+    return <div className="flex items-center justify-center h-screen">טוען נתונים...</div>;
+  }
 
   return (
     <div className="container mx-auto p-4 rtl">
@@ -145,7 +194,12 @@ const FieldWorkerSalaries = () => {
 
       <div className="flex justify-between mb-4">
         <Button onClick={addNewWorker}>הוסף עובד חדש</Button>
-        <Button onClick={saveChanges}>שמור שינויים</Button>
+        <Button 
+          onClick={saveChanges}
+          disabled={updateSalariesMutation.isPending}
+        >
+          {updateSalariesMutation.isPending ? "שומר..." : "שמור שינויים"}
+        </Button>
       </div>
 
       <Card>

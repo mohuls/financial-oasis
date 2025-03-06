@@ -15,7 +15,15 @@ import OutstandingCustomers from "./components/OutstandingCustomers";
 import NotFound from "./pages/NotFound";
 import Sidebar from "./components/Sidebar";
 
-const queryClient = new QueryClient();
+// Create a client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 // Protected Route Component with Sidebar
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
