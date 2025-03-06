@@ -43,6 +43,18 @@ export interface FieldWorkerData {
   };
 }
 
+// Helper function to extract data from MirageJS response
+function extractData(data: any) {
+  if (data && data.models) {
+    return data.models;
+  } else if (data && Array.isArray(data)) {
+    return data;
+  } else if (data && data.id) {
+    return data;
+  }
+  return data;
+}
+
 // Function to fetch data from API
 export async function fetchData(endpoint: string) {
   try {
@@ -56,8 +68,7 @@ export async function fetchData(endpoint: string) {
     const data = await response.json();
     console.log(`Fetched ${endpoint} data:`, data);
     
-    // Handle different response formats from MirageJS
-    return data.models || data;
+    return extractData(data);
   } catch (error) {
     console.error(`Failed to fetch ${endpoint}:`, error);
     toast.error("שגיאה בטעינת הנתונים", {
@@ -90,7 +101,7 @@ export async function addData(endpoint: string, data: any) {
       description: "הנתונים נוספו בהצלחה",
     });
     
-    return result;
+    return extractData(result);
   } catch (error) {
     console.error(`Failed to add ${endpoint}:`, error);
     toast.error("שגיאה בהוספת נתונים", {
@@ -123,7 +134,7 @@ export async function updateData(endpoint: string, id: number, data: any) {
       description: "הנתונים עודכנו בהצלחה",
     });
     
-    return result;
+    return extractData(result);
   } catch (error) {
     console.error(`Failed to update ${endpoint}:`, error);
     toast.error("שגיאה בעדכון נתונים", {
@@ -141,7 +152,7 @@ export async function deleteData(endpoint: string, id: number) {
       method: "DELETE",
     });
     
-    if (!response.ok) {
+    if (!response.ok && response.status !== 204) {
       throw new Error(`Error deleting ${endpoint}: ${response.statusText}`);
     }
     
